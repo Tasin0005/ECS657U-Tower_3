@@ -21,6 +21,7 @@ public static class TowerDefenceSceneBuilder
 
         MakeFolder("Scenes");
         MakeFolder("Materials");
+        MakeFolder("Prefabs");
 
         // Create materials with MakeMaterial(), written below 
         Material gridBase = MakeMaterial("GridBase", new Color(0.22f, 0.34f, 0.25f));
@@ -30,6 +31,9 @@ public static class TowerDefenceSceneBuilder
         Material spawn = MakeMaterial("Spawn", new Color(0.53f, 0.23f, 0.71f));
         Material pad = MakeMaterial("PlacementPad", new Color(0.11f, 0.69f, 0.86f));
         Material gold = MakeMaterial("Crystal", new Color(1f, 0.75f, 0.20f));
+        Material red = MakeMaterial("BasicEnemy", new Color(0.90f, 0.18f, 0.20f));
+        Material orange = MakeMaterial("StrongEnemy", new Color(0.98f, 0.47f, 0.14f));
+
 
         // Create a new empty scene to hold the map
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -120,18 +124,28 @@ public static class TowerDefenceSceneBuilder
         Transform leftRoute = MakeWaypoints("LeftRoute", leftCorners, routes.transform);
         Transform rightRoute = MakeWaypoints("RightRoute", rightCorners, routes.transform);
 
+        // TESTING: Uses a spawner script to spawn enemies along the routes, for testing
+        GameObject basicPrefab = MakeEnemyPrefab("BasicEnemy", red, 0.8f, 2.5f, 0.5f, 10, 3, 4);
+        GameObject strongPrefab = MakeEnemyPrefab("StrongEnemy", orange, 1.2f, 1.4f, 0.7f, 25, 5, 6);
+        GameObject testObject = new GameObject("TEST_ONLY_Disable_When_Waves_Are_Ready");
+        TestEnemySpawner tester = testObject.AddComponent<TestEnemySpawner>();
+        tester.basicEnemyPrefab = basicPrefab;
+        tester.strongEnemyPrefab = strongPrefab;
+        tester.leftRoute = leftRoute;
+        tester.rightRoute = rightRoute;
+
         // Creates a fixed birds-eye camera
         GameObject cameraObject = new GameObject("Main Camera");
         cameraObject.tag = "MainCamera";
         Camera camera = cameraObject.AddComponent<Camera>();
         cameraObject.AddComponent<AudioListener>();
         camera.orthographic = true;
-        camera.orthographicSize = 23.5f;
+        camera.orthographicSize = 18f;
         camera.rect = new Rect(0, 0, 0.78f, 1); // Right side is for the UI
         camera.clearFlags = CameraClearFlags.SolidColor;
         camera.backgroundColor = new Color(0.1f, 0.15f, 0.19f);
-        cameraObject.transform.position = new Vector3(0, 50, 0);
-        cameraObject.transform.rotation = Quaternion.Euler(90, 0, 0);
+        cameraObject.transform.position = new Vector3(0, 50, -50);
+        cameraObject.transform.rotation = Quaternion.Euler(45, 0, 0);
 
         // Creates directional light for the scene
         GameObject lightObject = new GameObject("Directional Light");
@@ -227,6 +241,27 @@ public static class TowerDefenceSceneBuilder
         }
         return cube;
     }
+
+    // Saves a sphere with movement and health as a prefab
+    private static GameObject MakeEnemyPrefab(string name, Material material, float size, float speed, float height, float hitPoints, int reward, int penalty)
+    {
+        GameObject enemy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        enemy.name = name;
+        enemy.transform.localScale = new Vector3(size, size, size);
+        enemy.GetComponent<Renderer>().sharedMaterial = material;
+        EnemyHealth health = enemy.AddComponent<EnemyHealth>();
+        health.maxHealth = hitPoints;
+        health.killReward = reward;
+        health.breachPenalty = penalty;
+        EnemyMovement movement = enemy.AddComponent<EnemyMovement>();
+        movement.moveSpeed = speed;
+        movement.travelHeight = height;
+        GameObject prefab = PrefabUtility.SaveAsPrefabAsset(
+            enemy, "Assets/Prefabs/" + name + ".prefab");
+        Object.DestroyImmediate(enemy);
+        return prefab;
+    }
+
 
     // Loads an existing material or creates and saves a new one with the requested colour
     private static Material MakeMaterial(string name, Color colour)
