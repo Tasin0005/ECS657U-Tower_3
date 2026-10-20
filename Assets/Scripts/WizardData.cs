@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Holds the wizard's stats as an asset so team can tune values
+//Holds the wizard's stats as an asset so team can tune values
 [CreateAssetMenu(fileName = "WizardData", menuName = "Tower Defence/Wizard Data")]
 public class WizardData : ScriptableObject
 {

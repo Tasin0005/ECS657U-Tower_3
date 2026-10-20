@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Attacks the nearest enemy in range automatically (no manual shooting, per the plan).
+//Attacks the nearest enemy in range automatically.
 public class WizardAttack : MonoBehaviour
 {
     public WizardData data;
@@ -25,17 +25,17 @@ public class WizardAttack : MonoBehaviour
     {
         EnemyHealth target = FindClosestEnemyInRange();
 
-        // No enemy in range means no attack and no beam
+        //No enemy in range means, no attack
         if (target == null)
         {
             beam.enabled = false;
             return;
         }
 
-        // Damage is per second, so scale by frame time to be framerate independent
+        //Damage is per second, so scale by frame time to be framerate independent
         target.TakeDamage(data.damagePerSecond * Time.deltaTime);
 
-        // The target may have just died and been destroyed this frame
+        //The target may have just died and been destroyed this frame
         if (target == null)
         {
             beam.enabled = false;
@@ -47,7 +47,7 @@ public class WizardAttack : MonoBehaviour
         beam.SetPosition(1, target.transform.position);
     }
 
-    // Searches EnemyHealth directly because enemies have no tag
+    //Searches EnemyHealth directly because we don't have enemey tag yet(Discuss with Tasin)
     EnemyHealth FindClosestEnemyInRange()
     {
         EnemyHealth closest = null;
