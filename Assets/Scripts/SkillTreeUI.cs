@@ -8,7 +8,6 @@ public class SkillTreeUI : MonoBehaviour
     public Button btnPhysicalMagic;
     public Button btnMagicTraining;
     public Button btnUltimate;
-
     //Wire buttons to SkillPoints
     void Start()
     {
