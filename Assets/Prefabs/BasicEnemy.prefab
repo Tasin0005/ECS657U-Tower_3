@@ -119,10 +119,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6d83c0dc74c94f43872ff0f836dff0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 10
+  maxHealth: 20
   CurrentHealth: 0
-  killReward: 3
-  breachPenalty: 4
+  killReward: 2
+  breachPenalty: 1
   IsResolved: 0
 --- !u!114 &6892169713873449911
 MonoBehaviour:

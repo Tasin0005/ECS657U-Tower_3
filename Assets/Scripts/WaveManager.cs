@@ -17,16 +17,32 @@ public class WaveManager : MonoBehaviour
     public Transform leftRoute;           // children = waypoints, in order
     public Transform rightRoute;
 
-    [Header("Tuning")]
-    public float spawnInterval = 2f;
+    public enum SpawnSide { Both, Left, Right, Random }
 
-    // Wave compositions from the plan: { red, orange }
-    // After the last entry, the last wave repeats until the game ends.
-    private readonly int[][] waves =
+    [System.Serializable]
+    public struct Wave
     {
-        new[] { 5, 0 },   // Wave 1
-        new[] { 4, 2 },   // Wave 2
-        new[] { 5, 3 },   // Wave 3 (repeats)
+        public int red;          // basic enemies
+        public int orange;       // strong enemies
+        public SpawnSide side;   // which path(s) this wave uses
+        public Wave(int red, int orange, SpawnSide side = SpawnSide.Both)
+        {
+            this.red = red; this.orange = orange; this.side = side;
+        }
+    }
+
+    [Header("Tuning")]
+    public float spawnInterval = 1.5f;
+
+    // Wave compositions, editable in the Inspector.
+    // After the last entry, the last wave repeats until the game ends.
+    public Wave[] waves =
+    {
+        new Wave(6, 0),    // Wave 1
+        new Wave(6, 2),    // Wave 2
+        new Wave(8, 3),    // Wave 3
+        new Wave(8, 5),    // Wave 4
+        new Wave(10, 6),   // Wave 5 (repeats)
     };
 
     public int CurrentWave { get; private set; }        // 0 = no wave started yet
@@ -47,12 +63,12 @@ public class WaveManager : MonoBehaviour
     // Called by the Start Wave button (HUDManager wires it up).
     public void StartNextWave()
     {
-        if (WaveInProgress || stopped)
+        if (WaveInProgress || stopped || waves.Length == 0)
             return;
 
         CurrentWave++;
-        int[] comp = waves[Mathf.Min(CurrentWave - 1, waves.Length - 1)];
-        StartCoroutine(SpawnWave(comp[0], comp[1]));
+        Wave wave = waves[Mathf.Min(CurrentWave - 1, waves.Length - 1)];
+        StartCoroutine(SpawnWave(wave.red, wave.orange, wave.side));
     }
 
     // Called by GameOverUI on victory/defeat so nothing else spawns.
@@ -63,16 +79,25 @@ public class WaveManager : MonoBehaviour
         spawning = false;
     }
 
-    private IEnumerator SpawnWave(int redCount, int orangeCount)
+    private IEnumerator SpawnWave(int redCount, int orangeCount, SpawnSide side)
     {
         WaveInProgress = true;
         spawning = true;
 
         List<bool> order = BuildOrder(redCount, orangeCount); // true = orange
 
+        int redsSpawned = 0, orangesSpawned = 0;
+
         for (int i = 0; i < order.Count; i++)
         {
-            bool useLeft = i % 2 == 0; // alternate so BOTH routes are used
+            // Each colour alternates sides on its own, so oranges use both paths too.
+            int countOfThisColour = order[i] ? orangesSpawned++ : redsSpawned++;
+
+            bool useLeft;
+            if (side == SpawnSide.Left) useLeft = true;
+            else if (side == SpawnSide.Right) useLeft = false;
+            else if (side == SpawnSide.Random) useLeft = UnityEngine.Random.value < 0.5f;
+            else useLeft = countOfThisColour % 2 == 0; // Both: alternate left and right
             SpawnEnemy(order[i] ? strongEnemyPrefab : basicEnemyPrefab, useLeft ? leftPoints : rightPoints);
             yield return new WaitForSeconds(spawnInterval);
         }
