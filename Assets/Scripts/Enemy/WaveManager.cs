@@ -1,55 +1,57 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Member 4 - spawns waves on BOTH routes and tracks when a wave is finished.
-// Put this on an empty GameObject called "WaveManager" in Prototype.unity.
-// Replaces TestEnemySpawner (turn that off or untick spawnOnStart).
+// Spawns waves on both routes and tracks wave completion via events instead of polling per frame.
 public class WaveManager : MonoBehaviour
 {
     public static WaveManager Instance { get; private set; }
 
-    [Header("Enemy prefabs (Member 1)")]
-    public GameObject basicEnemyPrefab;   // red sphere
-    public GameObject strongEnemyPrefab;  // orange sphere
+    [Header("Enemy prefabs")]
+    public GameObject basicEnemyPrefab;
+    public GameObject strongEnemyPrefab;
 
-    [Header("Routes (Member 1) - drag in the LeftRoute / RightRoute parents")]
-    public Transform leftRoute;           // children = waypoints, in order
+    [Header("Routes - drag in the LeftRoute / RightRoute parents")]
+    public Transform leftRoute;
     public Transform rightRoute;
 
     public enum SpawnSide { Both, Left, Right, Random }
 
-    [System.Serializable]
+    [Serializable]
     public struct Wave
     {
-        public int red;          // basic enemies
-        public int orange;       // strong enemies
-        public SpawnSide side;   // which path(s) this wave uses
+        public int red;
+        public int orange;
+        public SpawnSide side;
+
         public Wave(int red, int orange, SpawnSide side = SpawnSide.Both)
         {
-            this.red = red; this.orange = orange; this.side = side;
+            this.red = red;
+            this.orange = orange;
+            this.side = side;
         }
     }
 
     [Header("Tuning")]
     public float spawnInterval = 1.5f;
 
-    // Wave compositions, editable in the Inspector.
-    // After the last entry, the last wave repeats until the game ends.
     public Wave[] waves =
     {
-        new Wave(6, 0),    // Wave 1
-        new Wave(6, 2),    // Wave 2
-        new Wave(8, 3),    // Wave 3
-        new Wave(8, 5),    // Wave 4
-        new Wave(10, 6),   // Wave 5 (repeats)
+        new Wave(6, 0),
+        new Wave(6, 2),
+        new Wave(8, 3),
+        new Wave(8, 5),
+        new Wave(10, 6),
     };
 
-    public int CurrentWave { get; private set; }        // 0 = no wave started yet
+    public int CurrentWave { get; private set; }
     public bool WaveInProgress { get; private set; }
 
-    private readonly List<GameObject> aliveEnemies = new List<GameObject>();
+    public event Action OnWaveStateChanged;
+
     private Transform[] leftPoints, rightPoints;
+    private int aliveEnemyCount;
     private bool spawning;
     private bool stopped;
 
@@ -60,7 +62,18 @@ public class WaveManager : MonoBehaviour
         rightPoints = GetWaypoints(rightRoute);
     }
 
-    // Called by the Start Wave button (HUDManager wires it up).
+    private void OnEnable()
+    {
+        GameEvents.EnemyKilled += HandleEnemyResolved;
+        GameEvents.EnemyBreached += HandleEnemyResolved;
+    }
+
+    private void OnDisable()
+    {
+        GameEvents.EnemyKilled -= HandleEnemyResolved;
+        GameEvents.EnemyBreached -= HandleEnemyResolved;
+    }
+
     public void StartNextWave()
     {
         if (WaveInProgress || stopped || waves.Length == 0)
@@ -71,7 +84,6 @@ public class WaveManager : MonoBehaviour
         StartCoroutine(SpawnWave(wave.red, wave.orange, wave.side));
     }
 
-    // Called by GameOverUI on victory/defeat so nothing else spawns.
     public void StopWaves()
     {
         stopped = true;
@@ -83,26 +95,29 @@ public class WaveManager : MonoBehaviour
     {
         WaveInProgress = true;
         spawning = true;
+        OnWaveStateChanged?.Invoke();
 
-        List<bool> order = BuildOrder(redCount, orangeCount); // true = orange
+        List<bool> order = BuildOrder(redCount, orangeCount);
+        WaitForSeconds wait = new WaitForSeconds(spawnInterval);
 
         int redsSpawned = 0, orangesSpawned = 0;
 
         for (int i = 0; i < order.Count; i++)
         {
-            // Each colour alternates sides on its own, so oranges use both paths too.
             int countOfThisColour = order[i] ? orangesSpawned++ : redsSpawned++;
 
             bool useLeft;
             if (side == SpawnSide.Left) useLeft = true;
             else if (side == SpawnSide.Right) useLeft = false;
             else if (side == SpawnSide.Random) useLeft = UnityEngine.Random.value < 0.5f;
-            else useLeft = countOfThisColour % 2 == 0; // Both: alternate left and right
+            else useLeft = countOfThisColour % 2 == 0;
+
             SpawnEnemy(order[i] ? strongEnemyPrefab : basicEnemyPrefab, useLeft ? leftPoints : rightPoints);
-            yield return new WaitForSeconds(spawnInterval);
+            yield return wait;
         }
 
         spawning = false;
+        CheckWaveComplete();
     }
 
     private void SpawnEnemy(GameObject prefab, Transform[] route)
@@ -123,25 +138,30 @@ public class WaveManager : MonoBehaviour
             return;
         }
 
-        movement.SetRoute(route); // also places the enemy on the first waypoint
-        aliveEnemies.Add(enemy);
+        movement.SetRoute(route);
+        aliveEnemyCount++;
     }
 
-    private void Update()
+    private void HandleEnemyResolved(int _)
     {
-        if (!WaveInProgress || spawning)
-            return;
+        if (aliveEnemyCount > 0)
+            aliveEnemyCount--;
 
-        // Killed or breached enemies are destroyed, which makes them null in Unity.
-        aliveEnemies.RemoveAll(e => e == null);
-        if (aliveEnemies.Count == 0)
-            WaveInProgress = false;
+        CheckWaveComplete();
     }
 
-    // Spreads orange enemies between the reds instead of all at the end.
+    private void CheckWaveComplete()
+    {
+        if (WaveInProgress && !spawning && aliveEnemyCount <= 0)
+        {
+            WaveInProgress = false;
+            OnWaveStateChanged?.Invoke();
+        }
+    }
+
     private static List<bool> BuildOrder(int red, int orange)
     {
-        List<bool> order = new List<bool>();
+        List<bool> order = new List<bool>(red + orange);
         while (red > 0 || orange > 0)
         {
             if (red > 0) { order.Add(false); red--; }
