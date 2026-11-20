@@ -1,22 +1,37 @@
 using UnityEngine;
 
-// Moves a sphere from one waypoint to the next
-// Unity needs MonoBehaviour for Update() to run each frame
+// Moves an active enemy from waypoint to waypoint until it reaches the fortress
+[RequireComponent(typeof(EnemyHealth))]
 public class EnemyMovement : MonoBehaviour
 {
-    public float moveSpeed = 2.5f;
-    public float travelHeight = 0.5f;
+    public EnemyData data;
     public Transform[] waypoints;
 
-    private int nextPoint = 1;
-    private bool finished = false;
+    private const float WaypointReachThresholdSqr = 0.02f * 0.02f;
 
-    // The spawner can give an enemy either route
+    private EnemyHealth health;
+    private int nextPoint = 1;
+    private bool finished;
+    private bool routeSet;
+
+    private void Awake()
+    {
+        health = GetComponent<EnemyHealth>();
+    }
+
     public void SetRoute(Transform[] newRoute)
     {
         waypoints = newRoute;
         nextPoint = 1;
         finished = false;
+        routeSet = true;
+
+        if (data == null)
+        {
+            Debug.LogError("EnemyMovement: missing EnemyData on " + name);
+            enabled = false;
+            return;
+        }
 
         if (waypoints == null || waypoints.Length < 2)
         {
@@ -26,40 +41,41 @@ public class EnemyMovement : MonoBehaviour
         }
 
         Vector3 start = waypoints[0].position;
-        transform.position = new Vector3(start.x, travelHeight, start.z);
+        transform.position = new Vector3(start.x, data.travelHeight, start.z);
     }
 
     private void Start()
     {
-        if (waypoints != null && waypoints.Length >= 2)
+        if (!routeSet && waypoints != null && waypoints.Length >= 2)
             SetRoute(waypoints);
     }
 
     private void Update()
     {
-        if (finished || waypoints == null || waypoints.Length < 2)
+        if (finished || data == null || waypoints == null || waypoints.Length < 2)
             return;
 
         Vector3 target = waypoints[nextPoint].position;
-        target.y = travelHeight;
+        target.y = data.travelHeight;
 
         Vector3 direction = target - transform.position;
         if (direction.sqrMagnitude > 0.0001f)
             transform.rotation = Quaternion.LookRotation(direction);
 
         transform.position = Vector3.MoveTowards(
-            transform.position, target, moveSpeed * Time.deltaTime);
+            transform.position, target, data.moveSpeed * Time.deltaTime);
 
-        if (Vector3.Distance(transform.position, target) < 0.02f)
+        if ((transform.position - target).sqrMagnitude < WaypointReachThresholdSqr)
         {
             nextPoint++;
             if (nextPoint >= waypoints.Length)
             {
                 finished = true;
-
-                // Remove the enemy and apply the breach penalty.
-                GetComponent<EnemyHealth>().ReachFortress();
+                if (health != null)
+                    health.ReachFortress();
+#if UNITY_EDITOR
                 Debug.Log(name + " reached the fortress");
+#endif
             }
         }
     }

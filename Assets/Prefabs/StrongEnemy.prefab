@@ -119,11 +119,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6d83c0dc74c94f43872ff0f836dff0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 80
-  CurrentHealth: 0
-  killReward: 2
-  breachPenalty: 4
-  IsResolved: 0
+  data: {fileID: 11400000, guid: 8f9df105d019eb7448026d5d3c6f87d3, type: 2}
 --- !u!114 &5142814866997959312
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -136,6 +132,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dfda0d480d6daf48942b3b009eecdf8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 1.4
-  travelHeight: 0.7
+  data: {fileID: 11400000, guid: 8f9df105d019eb7448026d5d3c6f87d3, type: 2}
   waypoints: []

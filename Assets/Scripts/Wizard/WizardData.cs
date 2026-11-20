@@ -1,8 +1,12 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-//Holds the wizard's stats as an asset so team can tune values
+public enum WizardType
+{
+    Basic,
+    Advanced
+}
+
+// Holds a wizard's shared stats as a reusable ScriptableObject asset so team can tweak values
 [CreateAssetMenu(fileName = "WizardData", menuName = "Tower Defence/Wizard Data")]
 public class WizardData : ScriptableObject
 {

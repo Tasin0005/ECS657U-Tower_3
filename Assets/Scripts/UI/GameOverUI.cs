@@ -1,9 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// Member 4 - Victory / Defeat overlays and Restart.
-// Listens to Member 3's SkillPoints.OnVictory and SkillPoints.OnDefeat,
-// so no changes are needed in their code.
+// Victory / Defeat overlays and scene restart
 public class GameOverUI : MonoBehaviour
 {
     public static GameOverUI Instance { get; private set; }
@@ -49,7 +47,7 @@ public class GameOverUI : MonoBehaviour
     private void EndGame(GameObject panel)
     {
         if (IsGameOver)
-            return;   // only ever show one ending
+            return;
 
         IsGameOver = true;
 
@@ -59,10 +57,10 @@ public class GameOverUI : MonoBehaviour
         if (panel != null)
             panel.SetActive(true);
 
-        Time.timeScale = 0f;  // freezes enemies and wizards; UI buttons still work
+        Time.timeScale = 0f;
     }
 
-    // Hook to the Restart button on BOTH panels.
+    // Hooked to the Reset button and Restart buttons on both panels
     public void Restart()
     {
         Time.timeScale = 1f;
