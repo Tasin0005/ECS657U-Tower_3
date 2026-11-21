@@ -1,89 +1,142 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Handles skill tree button actions and updates locked/unlocked colours via events
+// Controls Skill Tree overlay: opens/pauses between waves, displays SP, refreshes nodes
 public class SkillTreeUI : MonoBehaviour
 {
-    [Header("Skill Buttons")]
-    public Button btnPhysicalMagic;
-    public Button btnMagicTraining;
-    public Button btnUltimate;
+    public static SkillTreeUI Instance { get; private set; }
 
-    [Header("Locked Appearance")]
-    public Color lockedColour = new Color(0.3f, 0.3f, 0.3f, 1f);
+    [Header("Panel & Controls")]
+    public GameObject skillTreePanel;
+    public Button closeButton;
+    public TMP_Text pointsText;
+    public SkillTooltipUI tooltip;
 
-    private Image physicalImage, trainingImage, ultimateImage;
-    private Color physicalColour, trainingColour, ultimateColour;
+    public bool IsOpen { get; private set; }
+
+    private SkillNodeUI[] nodes;
 
     private void Awake()
     {
-        CacheButtonImage(btnPhysicalMagic, out physicalImage, out physicalColour);
-        CacheButtonImage(btnMagicTraining, out trainingImage, out trainingColour);
-        CacheButtonImage(btnUltimate, out ultimateImage, out ultimateColour);
+        Instance = this;
+        if (skillTreePanel != null)
+        {
+            nodes = skillTreePanel.GetComponentsInChildren<SkillNodeUI>(true);
+            skillTreePanel.SetActive(false);
+        }
     }
 
     private void Start()
     {
+        if (closeButton != null)
+            closeButton.onClick.AddListener(Close);
+
         if (SkillPoints.Instance != null)
         {
+            SkillPoints.Instance.OnPointsChanged += RefreshUI;
             SkillPoints.Instance.OnSkillUnlocked += HandleSkillChanged;
             SkillPoints.Instance.OnSkillRelocked += HandleSkillChanged;
+            SkillPoints.Instance.OnVictory += ForceCloseForGameOver;
+            SkillPoints.Instance.OnDefeat += ForceCloseForGameOver;
         }
-
-        RefreshColours();
     }
 
     private void OnDestroy()
     {
         if (SkillPoints.Instance != null)
         {
+            SkillPoints.Instance.OnPointsChanged -= RefreshUI;
             SkillPoints.Instance.OnSkillUnlocked -= HandleSkillChanged;
             SkillPoints.Instance.OnSkillRelocked -= HandleSkillChanged;
+            SkillPoints.Instance.OnVictory -= ForceCloseForGameOver;
+            SkillPoints.Instance.OnDefeat -= ForceCloseForGameOver;
         }
     }
 
-    public void OnPhysicalMagic()
+    public void Open()
     {
-        if (SkillPoints.Instance != null)
-            SkillPoints.Instance.TryUnlock(SkillId.PhysicalMagic);
+        if (IsOpen)
+            return;
+
+        if (GameOverUI.Instance != null && GameOverUI.Instance.IsGameOver)
+            return;
+
+        if (WaveManager.Instance != null && WaveManager.Instance.WaveInProgress)
+            return;
+
+        if (SettingsMenu.Instance != null && SettingsMenu.Instance.IsOpen)
+            return;
+
+        IsOpen = true;
+        if (skillTreePanel != null)
+            skillTreePanel.SetActive(true);
+
+        if (tooltip != null)
+            tooltip.Hide();
+
+        Time.timeScale = 0f;
+        RefreshUI();
     }
 
-    public void OnMagicTraining()
+    public void Close()
     {
-        if (SkillPoints.Instance != null)
-            SkillPoints.Instance.TryUnlock(SkillId.MagicTraining);
+        if (!IsOpen)
+            return;
+
+        IsOpen = false;
+        if (tooltip != null)
+            tooltip.Hide();
+
+        if (skillTreePanel != null)
+            skillTreePanel.SetActive(false);
+
+        bool stayPaused = (GameOverUI.Instance != null && GameOverUI.Instance.IsGameOver)
+            || (SettingsMenu.Instance != null && SettingsMenu.Instance.IsOpen);
+
+        if (!stayPaused)
+            Time.timeScale = 1f;
     }
 
-    public void OnUltimate()
+    private void ForceCloseForGameOver()
     {
-        if (SkillPoints.Instance != null)
-            SkillPoints.Instance.TryUnlock(SkillId.Ultimate);
+        if (!IsOpen)
+            return;
+
+        IsOpen = false;
+        if (tooltip != null)
+            tooltip.Hide();
+
+        if (skillTreePanel != null)
+            skillTreePanel.SetActive(false);
     }
 
     private void HandleSkillChanged(SkillId _)
     {
-        RefreshColours();
+        RefreshUI();
     }
 
-    private void RefreshColours()
+    public void RefreshUI()
     {
-        if (SkillPoints.Instance == null)
+        if (pointsText != null && SkillPoints.Instance != null)
+            pointsText.text = "SP: " + SkillPoints.Instance.CurrentPoints;
+
+        if (nodes == null)
             return;
 
-        SetColour(physicalImage, SkillId.PhysicalMagic, physicalColour);
-        SetColour(trainingImage, SkillId.MagicTraining, trainingColour);
-        SetColour(ultimateImage, SkillId.Ultimate, ultimateColour);
+        for (int i = 0; i < nodes.Length; i++)
+            nodes[i].RefreshVisual();
     }
 
-    private void SetColour(Image image, SkillId skill, Color unlockedColour)
+    public void ShowTooltip(SkillNodeUI node)
     {
-        if (image != null)
-            image.color = SkillPoints.Instance.IsUnlocked(skill) ? unlockedColour : lockedColour;
+        if (tooltip != null)
+            tooltip.Show(node);
     }
 
-    private static void CacheButtonImage(Button button, out Image image, out Color originalColour)
+    public void HideTooltip()
     {
-        image = button != null ? button.GetComponent<Image>() : null;
-        originalColour = image != null ? image.color : Color.white;
+        if (tooltip != null)
+            tooltip.Hide();
     }
 }

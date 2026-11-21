@@ -1,16 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Automatically attacks the nearest enemy in range and draws a shared material beam.
+// Automatically attacks the nearest enemy in range with a shared material beam.
 public class WizardAttack : MonoBehaviour
 {
     public WizardData data;
-    public float physicalMagicBonusDps = 2f;
 
     private static Material sharedBeamMaterial;
 
     private LineRenderer beam;
-    private float currentDamagePerSecond;
     private float rangeSqr;
 
     private void Awake()
@@ -23,7 +21,6 @@ public class WizardAttack : MonoBehaviour
         }
 
         rangeSqr = data.range * data.range;
-        currentDamagePerSecond = data.damagePerSecond;
 
         if (sharedBeamMaterial == null)
             sharedBeamMaterial = new Material(Shader.Find("Sprites/Default"));
@@ -36,39 +33,6 @@ public class WizardAttack : MonoBehaviour
         beam.startColor = data.colour;
         beam.endColor = data.colour;
         beam.enabled = false;
-    }
-
-    private void Start()
-    {
-        if (data.type == WizardType.Basic && SkillPoints.Instance != null)
-        {
-            SkillPoints.Instance.OnSkillUnlocked += HandleSkillChanged;
-            SkillPoints.Instance.OnSkillRelocked += HandleSkillChanged;
-            RefreshDamage();
-        }
-    }
-
-    private void OnDestroy()
-    {
-        if (data != null && data.type == WizardType.Basic && SkillPoints.Instance != null)
-        {
-            SkillPoints.Instance.OnSkillUnlocked -= HandleSkillChanged;
-            SkillPoints.Instance.OnSkillRelocked -= HandleSkillChanged;
-        }
-    }
-
-    private void HandleSkillChanged(SkillId skill)
-    {
-        if (skill == SkillId.PhysicalMagic)
-            RefreshDamage();
-    }
-
-    private void RefreshDamage()
-    {
-        bool boosted = SkillPoints.Instance != null && SkillPoints.Instance.IsUnlocked(SkillId.PhysicalMagic);
-        currentDamagePerSecond = boosted
-            ? data.damagePerSecond + physicalMagicBonusDps
-            : data.damagePerSecond;
     }
 
     private void Update()
@@ -84,7 +48,7 @@ public class WizardAttack : MonoBehaviour
             return;
         }
 
-        target.TakeDamage(currentDamagePerSecond * Time.deltaTime);
+        target.TakeDamage(data.damagePerSecond * Time.deltaTime);
 
         if (target == null || target.IsResolved)
         {

@@ -7,11 +7,11 @@ public class HUDManager : MonoBehaviour
 {
     [Header("Text")]
     public TMP_Text waveText;
-    public TMP_Text statusText;
     public TMP_Text pointsText;
 
     [Header("Buttons")]
     public Button startWaveButton;
+    public Button skillTreeButton;
 
     private bool isGameOver;
 
@@ -19,6 +19,9 @@ public class HUDManager : MonoBehaviour
     {
         if (startWaveButton != null)
             startWaveButton.onClick.AddListener(OnStartWave);
+
+        if (skillTreeButton != null)
+            skillTreeButton.onClick.AddListener(OnOpenSkillTree);
 
         if (SkillPoints.Instance != null)
         {
@@ -54,6 +57,12 @@ public class HUDManager : MonoBehaviour
             WaveManager.Instance.StartNextWave();
     }
 
+    private void OnOpenSkillTree()
+    {
+        if (SkillTreeUI.Instance != null)
+            SkillTreeUI.Instance.Open();
+    }
+
     private void HandleGameOver()
     {
         isGameOver = true;
@@ -63,7 +72,7 @@ public class HUDManager : MonoBehaviour
     private void RefreshPoints()
     {
         if (pointsText != null && SkillPoints.Instance != null)
-            pointsText.text = "Points: " + SkillPoints.Instance.CurrentPoints;
+            pointsText.text = SkillPoints.Instance.CurrentPoints.ToString();
     }
 
     private void RefreshWaveUI()
@@ -72,15 +81,15 @@ public class HUDManager : MonoBehaviour
         if (wm == null)
             return;
 
+        bool canActBetweenWaves = !wm.WaveInProgress && !isGameOver;
+
         if (waveText != null)
             waveText.text = wm.CurrentWave == 0 ? "Wave: -" : "Wave: " + wm.CurrentWave;
 
         if (startWaveButton != null)
-            startWaveButton.interactable = !wm.WaveInProgress && !isGameOver;
+            startWaveButton.interactable = canActBetweenWaves;
 
-        if (statusText != null)
-            statusText.text = wm.WaveInProgress
-                ? "Wave in progress..."
-                : "Place wizards, then press Start Wave";
+        if (skillTreeButton != null)
+            skillTreeButton.interactable = canActBetweenWaves;
     }
 }

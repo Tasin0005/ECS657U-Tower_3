@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4a784fc4d36184bff8bf611950468d42, type: 3}
-  m_Name: AdvancedWizardData
+  m_Name: PhysicalWizardData
   m_EditorClassIdentifier: 
   type: 1
   cost: 5

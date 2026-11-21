@@ -3,10 +3,10 @@ using UnityEngine;
 public enum WizardType
 {
     Basic,
-    Advanced
+    Physical
 }
 
-// Holds a wizard's shared stats as a reusable ScriptableObject asset so team can tweak values
+// Holds a wizard's shared stats as a reusable ScriptableObject asset so team can tweak value
 [CreateAssetMenu(fileName = "WizardData", menuName = "Tower Defence/Wizard Data")]
 public class WizardData : ScriptableObject
 {

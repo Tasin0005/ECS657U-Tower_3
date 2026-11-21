@@ -2,16 +2,17 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// four skills in the prototype tree.
 public enum SkillId
 {
-    BasicMagic,
-    PhysicalMagic,
-    MagicTraining,
+    Basic,
+    Physical,
+    Mechanic,
+    Magic,
+    Imaginary,
     Ultimate
 }
 
-// Manages skill points (the sole currency), skill unlocking/relocking, and win/loss triggers.
+// Manages skill points (sole currency), 4 branch skill unlocking/relocking, and win/loss triggers
 public class SkillPoints : MonoBehaviour
 {
     public static SkillPoints Instance { get; private set; }
@@ -30,7 +31,7 @@ public class SkillPoints : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        unlockedSkills.Add(SkillId.BasicMagic);
+        unlockedSkills.Add(SkillId.Basic);
     }
 
     private void OnEnable()
@@ -95,11 +96,20 @@ public class SkillPoints : MonoBehaviour
     {
         switch (skill)
         {
-            case SkillId.PhysicalMagic: return 6;
-            case SkillId.MagicTraining: return 8;
-            case SkillId.Ultimate: return 16;
+            case SkillId.Basic: return 0;
+            case SkillId.Physical: return 6;
+            case SkillId.Mechanic: return 10;
+            case SkillId.Magic: return 10;
+            case SkillId.Imaginary: return 12;
+            case SkillId.Ultimate: return 20;
             default: return 0;
         }
+    }
+
+    // Only skills currently in the game can be unlocked. Mechanic, Mgic, and Imaginary stay unclickable for now
+    public bool IsImplemented(SkillId skill)
+    {
+        return skill == SkillId.Basic || skill == SkillId.Physical || skill == SkillId.Ultimate;
     }
 
     public bool IsUnlocked(SkillId skill)
@@ -107,21 +117,30 @@ public class SkillPoints : MonoBehaviour
         return unlockedSkills.Contains(skill);
     }
 
-    private bool HasPrerequisites(SkillId skill)
+    public bool HasPrerequisites(SkillId skill)
     {
         switch (skill)
         {
-            case SkillId.BasicMagic: return true;
-            case SkillId.PhysicalMagic: return IsUnlocked(SkillId.BasicMagic);
-            case SkillId.MagicTraining: return IsUnlocked(SkillId.PhysicalMagic);
-            case SkillId.Ultimate: return IsUnlocked(SkillId.MagicTraining);
-            default: return false;
+            case SkillId.Basic:
+                return true;
+            case SkillId.Physical:
+            case SkillId.Mechanic:
+            case SkillId.Magic:
+            case SkillId.Imaginary:
+                return IsUnlocked(SkillId.Basic);
+            case SkillId.Ultimate:
+                return IsUnlocked(SkillId.Physical)
+                    && IsUnlocked(SkillId.Mechanic)
+                    && IsUnlocked(SkillId.Magic)
+                    && IsUnlocked(SkillId.Imaginary);
+            default:
+                return false;
         }
     }
 
     public bool TryUnlock(SkillId skill)
     {
-        if (IsUnlocked(skill) || !HasPrerequisites(skill))
+        if (!IsImplemented(skill) || IsUnlocked(skill) || !HasPrerequisites(skill))
             return false;
 
         int cost = GetCost(skill);

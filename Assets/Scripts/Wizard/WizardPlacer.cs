@@ -1,16 +1,23 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
-// Picks wizard in the shop panel, then places it on an empty pad when clicked
+// Picks a wizard in the shop panel, then places it on an empty pad when clicked
 public class WizardPlacer : MonoBehaviour
 {
     public GameObject basicPrefab;
-    public GameObject advancedPrefab;
+    [FormerlySerializedAs("advancedPrefab")]
+    public GameObject physicalPrefab;
     public WizardData basicData;
-    public WizardData advancedData;
+    [FormerlySerializedAs("advancedData")]
+    public WizardData physicalData;
     public Camera gameCamera;
+
+    public WizardType? SelectedType => selected;
+    public event Action<WizardType?> OnWizardSelected;
 
     private WizardType? selected;
     private readonly HashSet<Transform> occupiedPads = new HashSet<Transform>();
@@ -31,16 +38,21 @@ public class WizardPlacer : MonoBehaviour
     public void SelectWizardType(WizardType type)
     {
         selected = type;
+        OnWizardSelected?.Invoke(selected);
     }
 
     private void HandleSkillRelocked(SkillId relocked)
     {
-        if (relocked == SkillId.MagicTraining && selected == WizardType.Advanced)
+        if (relocked == SkillId.Physical && selected == WizardType.Physical)
             SelectWizardType(WizardType.Basic);
     }
 
     private void Update()
     {
+        if ((SkillTreeUI.Instance != null && SkillTreeUI.Instance.IsOpen) ||
+            (SettingsMenu.Instance != null && SettingsMenu.Instance.IsOpen))
+            return;
+
         if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame || !selected.HasValue)
             return;
 
@@ -57,8 +69,8 @@ public class WizardPlacer : MonoBehaviour
             return;
 
         bool isBasic = selected.Value == WizardType.Basic;
-        WizardData data = isBasic ? basicData : advancedData;
-        GameObject prefab = isBasic ? basicPrefab : advancedPrefab;
+        WizardData data = isBasic ? basicData : physicalData;
+        GameObject prefab = isBasic ? basicPrefab : physicalPrefab;
 
         if (data == null || prefab == null || SkillPoints.Instance == null)
             return;
@@ -71,7 +83,6 @@ public class WizardPlacer : MonoBehaviour
         occupiedPads.Add(pad);
     }
 
-    // RaycastNonAlloc avoids per-click array allocations while still passing through enemy colliders.
     private Transform FindPadUnderMouse(Vector2 screenPosition)
     {
         if (gameCamera == null)
