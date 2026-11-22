@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Wizard card in the right sidebar. shows: name, SP cost, lock state, and yellow selection border.
+// Wizard card in the right sidebar: shows name, SP cost, lock state, and yellow selection border.
 [RequireComponent(typeof(Button))]
 public class WizardShopButton : MonoBehaviour
 {
@@ -17,14 +17,19 @@ public class WizardShopButton : MonoBehaviour
 
     [Header("Skill Lock")]
     public SkillId requiredSkill = SkillId.Basic;
-    public Color lockedCardColour = new Color(0.16f, 0.20f, 0.26f, 1f);
+    public Color lockedCardColour = new Color(0.098f, 0.125f, 0.169f, 1f);
     public Color lockedIconColour = new Color(0.35f, 0.38f, 0.44f, 1f);
+    public Color lockedTextColour = new Color(0.541f, 0.580f, 0.651f, 1f);
+    public float lockedFontSize = 20f;
     public string lockedText = "Unlock in\nSkill Tree";
 
     private Button button;
     private Image cardImage;
     private Color unlockedCardColour;
     private Color unlockedIconColour;
+    private Color unlockedTextColour;
+    private FontStyles unlockedFontStyle;
+    private float unlockedFontSize;
 
     private void Awake()
     {
@@ -36,6 +41,13 @@ public class WizardShopButton : MonoBehaviour
 
         if (iconImage != null)
             unlockedIconColour = iconImage.color;
+
+        if (nameLabel != null)
+        {
+            unlockedTextColour = nameLabel.color;
+            unlockedFontStyle = nameLabel.fontStyle;
+            unlockedFontSize = nameLabel.fontSize;
+        }
 
         if (selectionBorder != null)
             selectionBorder.SetActive(false);
@@ -104,7 +116,12 @@ public class WizardShopButton : MonoBehaviour
             iconImage.color = unlocked ? unlockedIconColour : lockedIconColour;
 
         if (nameLabel != null)
+        {
             nameLabel.text = unlocked ? data.type + " Wizard" : lockedText;
+            nameLabel.color = unlocked ? unlockedTextColour : lockedTextColour;
+            nameLabel.fontStyle = unlocked ? unlockedFontStyle : FontStyles.Normal;
+            nameLabel.fontSize = unlocked ? unlockedFontSize : lockedFontSize;
+        }
 
         if (costLabel != null)
         {

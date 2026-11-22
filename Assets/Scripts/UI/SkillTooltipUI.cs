@@ -12,7 +12,7 @@ public class SkillTooltipUI : MonoBehaviour
     public TMP_Text statusText;
 
     [Header("Positioning")]
-    public Vector2 offset = new Vector2(0f, 110f);
+    public Vector2 offset = new Vector2(0f, 160f);
     public float edgePadding = 16f;
 
     [Header("Status Colours")]
@@ -23,9 +23,19 @@ public class SkillTooltipUI : MonoBehaviour
 
     private RectTransform tooltipRect;
     private RectTransform parentRect;
+    private bool initialized;
 
     private void Awake()
     {
+        EnsureInitialized();
+    }
+
+    private void EnsureInitialized()
+    {
+        if (initialized)
+            return;
+
+        initialized = true;
         tooltipRect = GetComponent<RectTransform>();
         parentRect = tooltipRect.parent as RectTransform;
 
@@ -33,14 +43,14 @@ public class SkillTooltipUI : MonoBehaviour
         CanvasGroup cg = GetComponent<CanvasGroup>();
         cg.blocksRaycasts = false;
         cg.interactable = false;
-
-        Hide();
     }
 
     public void Show(SkillNodeUI node)
     {
         if (node == null || SkillPoints.Instance == null)
             return;
+
+        EnsureInitialized();
 
         SkillPoints sp = SkillPoints.Instance;
         SkillId id = node.skillId;
@@ -99,7 +109,6 @@ public class SkillTooltipUI : MonoBehaviour
         Vector3 nodeWorldCenter = nodeRect.TransformPoint(nodeRect.rect.center);
         Vector2 localPos = (Vector2)parentRect.InverseTransformPoint(nodeWorldCenter) + offset;
 
-        // Flip below the node if placing above would clip the top of the window.
         float halfW = tooltipRect.rect.width * 0.5f;
         float halfH = tooltipRect.rect.height * 0.5f;
         Rect bounds = parentRect.rect;

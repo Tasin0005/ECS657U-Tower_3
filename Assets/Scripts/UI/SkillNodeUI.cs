@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-// Attached to each node in the horizontal Skill Tree. Handles clicks, colours, and hover tooltips
+// Attached to each circular node in the horizontal Skill Tree. Handles clicks, colours, and hover tooltips.
 [RequireComponent(typeof(Button))]
 public class SkillNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
@@ -13,19 +13,21 @@ public class SkillNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     [Header("Node Colours")]
     public Color unlockedColour = new Color(0.22f, 0.72f, 0.42f, 1f);
-    public Color availableColour = new Color(0.85f, 0.88f, 0.92f, 1f);
+    public Color availableColour = new Color(0.17f, 0.49f, 0.91f, 1f);
     public Color lockedColour = new Color(0.30f, 0.30f, 0.30f, 1f);
 
     private Button button;
     private Image circleImage;
+    private RectTransform rectTransform;
 
-    public RectTransform RectTransform { get; private set; }
+    public RectTransform RectTransform =>
+        rectTransform != null ? rectTransform : (rectTransform = GetComponent<RectTransform>());
 
     private void Awake()
     {
         button = GetComponent<Button>();
         circleImage = GetComponent<Image>();
-        RectTransform = GetComponent<RectTransform>();
+        rectTransform = GetComponent<RectTransform>();
     }
 
     private void Start()
@@ -48,6 +50,9 @@ public class SkillNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     public void RefreshVisual()
     {
+        if (circleImage == null)
+            circleImage = GetComponent<Image>();
+
         if (circleImage == null || SkillPoints.Instance == null)
             return;
 

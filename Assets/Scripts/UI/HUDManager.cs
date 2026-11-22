@@ -84,7 +84,7 @@ public class HUDManager : MonoBehaviour
         bool canActBetweenWaves = !wm.WaveInProgress && !isGameOver;
 
         if (waveText != null)
-            waveText.text = wm.CurrentWave == 0 ? "Wave: -" : "Wave: " + wm.CurrentWave;
+            waveText.text = wm.CurrentWave == 0 ? "-" : wm.CurrentWave.ToString();
 
         if (startWaveButton != null)
             startWaveButton.interactable = canActBetweenWaves;
